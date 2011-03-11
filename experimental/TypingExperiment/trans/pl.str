@@ -1,0 +1,36 @@
+module pl
+
+imports
+	libstratego-lib
+	libstratego-gpp
+	libstratego-aterm
+	include/PL
+	lib/editor-common.generated
+	lib/typecheck
+	analysis
+	resolve
+	types/gen-analysis
+	types/gen-check
+	
+rules 
+	
+	editor-analyse:
+		(ast, path, project-path) -> (ast', errors, warnings, notes)
+		with
+			editor-init;
+			init-type-analysis;
+			ast' := <analyse> ast;
+			errors   := <collect-all(type-check, conc)> ast';
+			warnings := <collect-all(fail, conc)> ast';
+			notes    := <collect-all(fail, conc)> ast'
+	  
+	generate-aterm:
+		(selected, position, ast, path, project-path) -> (filename, result)
+		with
+			filename := <guarantee-extension(|"aterm")> path;
+			result   := selected 
+	  
+	editor-hover:
+		(node, position, ast, path, project-path) -> $[type: [<type-to-string> t]]
+		where 
+			<type-of> node => t

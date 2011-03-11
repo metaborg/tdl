@@ -1,0 +1,93 @@
+module lib/namespace
+
+signature constructors
+	uid: UID -> Annotation
+	   : String -> UID
+	
+rules // scoped renaming
+	
+	/**
+	* executes the renaming strategy s in a new scope
+	* 
+	* declarations inside the new scope will hide existing declarations outside the new scope
+	* multiple declarations with the same name inside the new scope will be renamed to the same name
+	*
+	* @param renaming strategy s: a -> b
+	* @type a -> b
+	*/
+	new-scope(s) :
+		x -> y
+		where
+			<newname> x => scope ;
+			{| Renamed, RenamedInScope, CurrentScope, Scope:
+				rules (
+					CurrentScope: _ -> scope
+					Scope:+ x -> scope
+				) ;
+				<s> x => y
+			|} 
+			
+	/**
+	* annotates the current term with a fresh name
+	* can distinguish different namespaces
+	* remembers the renaming by storing two dynamic rules
+	* 
+	* multiple calls on the same term inside the same scope will give identical results
+	* calls inside a new scope will hide the results of calls to the same term from outer scopes
+	*
+	* @param namespace 
+	* @type a -> a
+	*/
+	uid-declaration(|namespace) : 
+		x -> x'
+		where 
+			CurrentScope => scope ;
+			<RenamedInScope> (namespace, scope, x) => x'
+	
+	uid-declaration(|namespace) : 
+		x -> x'
+		where 
+			CurrentScope => scope ;
+			not (<RenamedInScope> (namespace, scope, x));
+			x' := x{uid(<newname> "uid")}
+		where rules(
+			RenamedInScope: (namespace, scope, x) -> x' 
+			Renamed: (namespace, x) -> x'
+		)
+	
+	/**
+	* annotates the current term with a new name
+	* succeeds only if rename-declaration was called before on the same term
+	* will use the same name as rename-declaration (by calling the dynamic rule stored by rename-declaration)
+	*
+	* @param namespace 
+	* @type a -> b
+	*/
+	uid-reference(|namespace) :
+		x -> x'
+		where
+			<Renamed> (namespace, x) => x'
+	
+strategies // access scopes
+	
+	get-scopes = all-keys-Scope
+	
+	get-scopes(s) = get-scopes ; filter(where(s))
+	
+	get-scope(s) = get-scopes ; fetch-elem(where(s))
+	
+	project-scopes(s) = get-scopes ; filter(s)
+	
+	project-scope(s) = get-scopes ; fetch-elem(s)
+	
+	in-scope(s) = where(get-scope(s))
+	
+strategies	
+	
+	get-proposal-candidates(|namespace) = all-keys-Renamed ; filter(?(namespace, _) ; Renamed)
+	
+	store-proposal-candidates(|namespace) = get-proposal-candidates(|namespace) ; store-proposals
+	
+	store-proposals = ?x ; where (rules ( Propose : () -> x ))
+	
+	get-proposals = ( <Propose> () ; map(rm-annotations) ) <+ ![]

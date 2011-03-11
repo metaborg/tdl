@@ -1,0 +1,46 @@
+%% Grammar for the PL language
+%% By default, based on an example "entities" syntax
+module PL
+
+imports Common
+
+exports
+
+  context-free start-symbols
+    Start
+
+ 	context-free syntax
+ 		Prog					  -> Start
+		"program" Stmt            -> Prog {cons("Prog")}
+		
+		ID                        -> VarRef {cons("Var")}
+		
+		ID ":" Type ";"           -> Stmt {cons("Decl")}
+		VarRef "=" Exp ";"        -> Stmt {cons("Assign")}
+		"while" Exp Stmt          -> Stmt {cons("While")}
+		"if" Exp Stmt             -> Stmt {prefer, cons("If")}
+		"if" Exp Stmt "else" Stmt -> Stmt {cons("IfElse")}
+		"{" Stmt* "}"             -> Stmt {cons("Block")}
+		
+		"int"                     -> Type {cons("Int")}
+		"string"                  -> Type {cons("String")}
+		
+		INT                       -> Exp {cons("IntConst")}
+		STRING                    -> Exp {cons("StringConst")}
+		VarRef					  -> Exp
+		Exp "+" Exp               -> Exp {left, cons("Plus")}
+		Exp "-" Exp               -> Exp {left, cons("Minus")}
+		Exp "*" Exp               -> Exp {left, cons("Times")}
+		Exp "div" Exp             -> Exp {left, cons("Div")}
+		Exp "mod" Exp             -> Exp {left, cons("Mod")}
+		"(" Exp ")"               -> Exp {bracket}
+	
+	context-free priorities 
+		{
+			Exp "*" Exp   -> Exp
+			Exp "div" Exp -> Exp
+			Exp "mod" Exp -> Exp
+		} > {
+			Exp "+" Exp   -> Exp
+			Exp "-" Exp   -> Exp	
+		}

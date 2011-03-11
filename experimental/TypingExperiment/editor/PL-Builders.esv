@@ -1,0 +1,16 @@
+
+module PL-Builders
+
+imports PL-Builders.generated
+
+builders
+                                                                                                                                                                                    
+	provider : include/pl.ctree                                                                                 
+	provider : include/pl-java.jar                                                                              
+                                                                                                              
+	observer : editor-analyse                                                                                   
+                                                                                                              
+	builder  : "Show abstract syntax (for selection)" = generate-aterm (openeditor) (realtime) (meta) (source)  
+	builder  : "Show analysed abstract syntax (for selection)" = generate-aterm (openeditor) (realtime) (meta)
+                                                                                                              
+

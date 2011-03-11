@@ -1,0 +1,16 @@
+module PL.main
+
+imports PL-Builders PL-Colorer PL-Completions PL-Folding PL-Outliner PL-References PL-Syntax
+
+language General properties
+                  
+  name          : PL
+  id            : org.spoofax.examples.pl
+  extends       : Root
+                  
+  description   : "Spoofax/IMP-generated editor for the PL language"
+  url           : http://strategoxt.org
+                  
+  extensions    : pl
+  table         : include/PL.tbl
+  start symbols : Start

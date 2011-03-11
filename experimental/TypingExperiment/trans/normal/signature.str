@@ -1,0 +1,10 @@
+module normal/signature
+
+signature constructors
+	BinExp: BinOp * Exp * Exp -> Exp
+	PLUS  : BinOp
+	MINUS : BinOp
+	TIMES : BinOp
+	DIV   : BinOp
+	MOD   : BinOp
+	CONCAT: BinOp

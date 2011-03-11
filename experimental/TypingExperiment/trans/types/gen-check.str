@@ -1,0 +1,53 @@
+module types/gen-check
+
+imports
+  lib/typecheck
+  types/gen-analysis
+
+
+imports
+  include/PL
+  normal/signature
+
+
+rules
+
+  type-to-string :
+    INT() -> "int"
+
+  type-to-string :
+    STRING() -> "string"
+
+
+rules
+
+  type-check :
+    self@Decl(x, t_syn) -> <check-type(?t_sem|t_syn)> []
+
+
+rules
+
+  type-check :
+    self@Var(x) -> <check-resolve-type(?t|self)> []
+
+  type-check :
+    self@BinExp(op, e1, e2) -> <check-type(
+                                  !"Unknown operator"
+                                , ?FUN_TYPE([t1, t2], t)
+                                | op
+                                )
+                                ; check-type(?t1|e1)
+                                ; check-type(?t2|e2)> []
+
+
+rules
+
+  type-check :
+    self@Assign(v, e) -> <check-type(?t|v)
+                          ; check-type(?t|e)> []
+
+  type-check :
+    self@IfElse(e, _, _) -> <check-type(?INT()|e)> []
+
+  type-check :
+    self@While(e, _) -> <check-type(?INT()|e)> []

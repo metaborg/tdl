@@ -1,0 +1,38 @@
+module analysis
+
+imports
+	lib/editor-common.generated
+	lib/environment
+	lib/namespace
+	
+	include/PL
+	normal/normal
+	
+signature constructors
+	Vars: Env
+
+strategies
+	
+	//alldownup(s1, s2) = alldownup2(s1, s2)
+		
+	analyse = alltd(rename); bottomup(try(normal))
+	
+rules
+	
+	rename: Block(ss) -> Block(ss')
+	where
+		new-scope( ss' := <analyse> ss )
+	
+	rename: d@Decl(x, t) -> Decl(x', t)
+	where
+		x' := <uid-declaration(|Vars())> x;
+		<store-declaration(|Vars())> (x', d)
+		
+	rename: Assign(x, e) -> Assign(x', e')
+	where
+		x' := <uid-reference(|Vars())> x ;
+		e' := <analyse> e
+
+	rename: Var(x) -> Var(x')
+	where
+		x' := <uid-reference(|Vars())> x

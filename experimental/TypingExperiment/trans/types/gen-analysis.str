@@ -1,0 +1,71 @@
+module types/gen-analysis
+
+imports
+  lib/typecheck
+
+
+imports
+  include/PL
+  normal/signature
+
+
+signature
+  constructors
+    INT    : TYPE
+    STRING : TYPE
+
+
+rules
+
+  type-of :
+    self@Int() -> INT()
+
+  type-of :
+    self@String() -> STRING()
+
+
+rules
+
+  type-of :
+    self@Decl(x, t_syn) -> t_sem
+    where <type-of> t_syn => t_sem
+
+
+rules
+
+  type-of :
+    self@IntConst(_) -> INT()
+
+  type-of :
+    self@StringConst(_) -> STRING()
+
+  type-of :
+    self@Var(x) -> t
+    where <resolve ; type-of> self => t
+
+  type-of :
+    self@BinExp(op, e1, e2) -> t
+    where <type-of> op => FUN_TYPE([t1, t2], t)
+    where <type-of> e1 => t1
+    where <type-of> e2 => t2
+
+
+rules
+
+  type-of :
+    self@PLUS() -> FUN_TYPE([INT(), INT()], INT())
+
+  type-of :
+    self@MINUS() -> FUN_TYPE([INT(), INT()], INT())
+
+  type-of :
+    self@TIMES() -> FUN_TYPE([INT(), INT()], INT())
+
+  type-of :
+    self@DIV() -> FUN_TYPE([INT(), INT()], INT())
+
+  type-of :
+    self@MOD() -> FUN_TYPE([INT(), INT()], INT())
+
+  type-of :
+    self@CONCAT() -> FUN_TYPE([STRING(), STRING()], STRING())

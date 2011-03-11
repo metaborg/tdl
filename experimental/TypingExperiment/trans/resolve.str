@@ -1,0 +1,18 @@
+module resolve
+
+imports
+	
+	include/PL
+	lib/environment
+	analysis
+	
+rules
+	
+	resolve: Var(x) -> <lookup-unique-local(|Vars())> x
+	
+	editor-resolve: 
+		(node, position, ast, path, project-path) -> elem
+		where 
+			<resolve> node => elem
+			
+	term-to-string: Var(x) -> $[Variable [x]]

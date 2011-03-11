@@ -1,0 +1,240 @@
+module lib/environment
+
+imports
+	lib/namespace
+
+signature constructors
+	env: Env -> Annotation
+	StandardEnv: Env
+	
+rules // annotate env
+	
+	annotate-env(s) : x -> x{env(e)} where project-scope(s) => e
+
+	get-annotated-env = (get-annos ; fetch-elem(?env(<id>))) <+ !StandardEnv()
+	
+rules // store declarations and references
+	
+	/**
+	* stores a mapping from a name to a declaration
+	* can distinguish different tables
+	* remembers the mapping by storing a dynamic rule
+	*
+	* @param env
+	* @type (a, b) -> b
+	*/
+	store-declaration(|env) :
+		(x, d) -> d
+		where rules(
+			Declared:+ (env, x) -> d
+		)
+		
+	store-declaration = store-declaration(|<get-annotated-env>)
+	
+	/**
+	* stores the usage of a reference
+	* can distinguish different namespaces
+	* remembers the reference by storing a dynamic rule
+	*
+	* @param env
+	* @type a -> a
+	*/
+	store-reference(|env) :
+		x -> x
+		where rules (
+			Referred:+ (env, x) -> x
+		)
+
+	store-reference = store-reference(|<get-annotated-env>)
+	
+rules // include environments
+	
+	/**
+	*
+	* example: 
+	*     store: Class(c, Parent(p), _, _) -> <id> 
+	*         where 
+	*             <store-declaration(|Classes())> c ; 
+	*             <include-env(|Fields(c))> Fields(p) ;
+	*             <include-env(|Methods(c))> Methods(p) 
+	*/
+	include-env(|env) : 
+		included -> included
+		where rules (
+			IncludedBy:+ included -> env
+			Including:+ env -> included
+		)
+				
+strategies // access inclusions
+	
+	get-included-envs  = get-inclusions(bagof-Including)
+	get-including-envs = get-inclusions(bagof-IncludedBy)
+	
+	get-inclusions(s) = ![<id>] ; get-inclusions(s|[]) ; reverse 
+	
+	get-inclusions(s|temps): [] -> temps
+	 
+	get-inclusions(s|temps): 
+		[env|envs] -> <get-inclusions(s|temps)> envs
+		where <elem> (env, temps)
+		
+	get-inclusions(s|temps):  
+		[env|envs] -> <get-inclusions(s|temps')> envs
+		where
+			<s> env ;
+			get-inclusions(s|[env|temps]) => temps'
+		
+strategies // access declarations
+	
+	/**
+	* maps a name to its declarations
+	* can distinguish different environments
+	* remembers the mapping by calling a dynamic rule
+	*
+	* @param env
+	* 
+	* @type a -> List(b)
+	*/
+	lookup-all-local(|env) = !(env, <id>) ; bagof-Declared 
+	
+	lookup-all-local = lookup-all-local(|<get-annotated-env>)
+
+	/**
+	* maps a name to its declarations
+	* can distinguish different environments
+	* remembers the mapping by calling a dynamic rule
+	*
+	* @param env
+	* 
+	* @type a -> List(b)
+	*/
+	lookup-all(|env) = ?x ; <get-included-envs> env ; mapconcat(<lookup-all-local(|<id>)> x)
+
+	lookup-all = lookup-all(|<get-annotated-env>)
+	
+	/**
+	* succeeds if the current term can be mapped to a declaration
+	* can distinguish different environments
+	* 
+	* @param namespace
+	* 
+	* @type a -> a
+	*/
+	is-declared-local(|env) = where(lookup-all-local(|env) ; ?[_|_])
+
+	is-declared-local = is-declared-local(|<get-annotated-env>)
+
+	/**
+	* succeeds if the current term can be mapped to a declaration
+	* can distinguish different environments
+	* 
+	* @param namespace
+	* 
+	* @type a -> a
+	*/
+	is-declared(|env) = where(lookup-all(|env) ; ?[_|_])
+
+	is-declared = is-declared(|<get-annotated-env>)
+		
+	/**
+	* maps a name to its only declaration
+	* can distinguish different environments
+	* 
+	* @param env
+	*/
+	lookup-unique(|env) = lookup-all(|env) ; ?[<id>]
+
+	lookup-unique = lookup-unique(|<get-annotated-env>)
+	
+	/**
+	* maps a name to its only declaration
+	* can distinguish different environments
+	* 
+	* @param env
+	*/
+	lookup-unique-local(|env) = lookup-all-local(|env) ; ?[<id>]
+
+	lookup-unique-local = lookup-unique-local(|<get-annotated-env>)
+	
+	/**
+	* maps a name to its first declaration
+	* can distinguish different environments
+	* 
+	* @param env
+	*/
+	lookup(|env) = project(id|env) 
+	
+	lookup_ = lookup(|<get-annotated-env>)
+
+	/**
+	* maps a name to its first declaration for which strategy s holds
+	* can distinguish different environments
+	* 
+	* @param s: b -> c
+	* @param env
+	* 
+	* @type a -> b
+	*/
+	lookup(s|env) = project(where(s)|env)
+	
+	/**
+	* maps a name to its declarations for which strategy s holds
+	* can distinguish different environments
+	* 
+	* @param s: b -> c
+	* @param env
+	* 
+	* @type a -> List(b)
+	*/
+	lookup-all(s|env) = project-all(where(s)|env)
+
+strategies // project declarations
+	
+	/**
+	* maps a name to the first projection of its declarations
+	* can distinguish different environments
+	* 
+	* @param s: b -> c
+	* @param env
+	* 
+	* @type a -> c
+	*/
+	project(s|env) = lookup-all(|env) ; fetch-elem(s) 
+
+	/**
+	* maps a name to the projections of its declarations
+	* can distinguish different environments
+	* 
+	* @param s: b -> c
+	* @param env
+	* 
+	* @type a -> List(c)
+	*/
+	project-all(s|env) = lookup-all(|env) ; filter(s) 
+	
+strategies // access all declarations
+	
+	all-entries(|env) = 
+		<get-included-envs> env => envs ; 
+		all-keys-Declared ; 
+		filter(where( (id, !envs) ; elem )) ;
+		mapconcat(bagof-Declared)
+	
+	all-entries(s|env) = project-all-declarations(where(s)|env) 
+
+	project-all-declarations(s|env) = all-entries(|env) ; filter(s) 
+	 
+strategies // access references
+
+	get-references(|env) = ?x ; <get-included-envs> env  ; mapconcat(!(<id>, x) ; bagof-Referred)
+	
+	is-referred(|env) = get-references(|env) ; ?[_|_]
+
+strategies	
+	
+	lookup-proposals(s|namespace) = 
+		( 
+			<Propose> () ; 
+			filter(where( lookup(s|namespace) )) ; 
+			map(rm-annotations) 
+		) <+ ![]

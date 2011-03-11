@@ -1,0 +1,131 @@
+module typecheck
+
+signature constructors
+	
+	FUN_TYPE: List(TYPE) * TYPE -> TYPE
+
+rules
+	
+	init-type-analysis = rules ( type-rel:- _ ); try(init-relations)
+		
+	init-relations = fail
+		
+rules // dummy rules
+	
+	resolve = fail
+	type-to-string = fail
+	term-to-string = fail
+	type-of = fail
+
+rules // type relations
+	
+	type-rel(|relname) = eq <+ ( ?(sub, super) ; <elem> (super, <rel-extension(|relname)> sub) )
+
+	trans-type-rel(|relname) = eq <+ ( ?(sub, super) ; <elem> (super, <transitive-rel-extension(|relname)> sub) )
+
+	rel-extension(|relname): sub -> <bagof-type-rel> (relname, sub)
+	
+	transitive-rel-extension(|relname) = repeat(!(<id>, <rel-extension(|relname)>) ; not(eq) ; ?(_, <id>))
+	
+rules // collect errors
+	
+	perform-check(project, msg1, msg2): (exp, _) -> (exp, <msg1> exp)
+	where not (<project> exp) 
+		
+	perform-check(project, msg1, msg2): (exp, expected) -> (exp, <msg2> (actual, expected))
+	where
+		actual := <project> exp ;
+		not(<eq> (actual, expected))
+	
+	perform-check(project, check, msg1, msg2): exp -> (exp, <msg1> exp)
+	where not (<project> exp) 
+		
+	perform-check(project, check, msg1, msg2): exp -> (exp, <msg2> p)
+	where
+		p := <project> exp ; 
+		not(<check> p)
+	
+	checks(project, msg1, msg2) = zip ; filter(perform-check(project, msg1, msg2)) 
+
+	checks(project, check, msg1, msg2) = where (filter(project) ; check) ; filter(perform-check(project, id, msg1, msg2))
+	
+	collect-error(s) = try(![<s>|<id>])	
+	
+	collect-errors(s) = try(!(<s>,<id>) ; conc)
+
+rules
+	
+	check-type(|exp, type) = check-type(type-error2|exp, type)
+	check-type(check|exp) = check-type(type-error1, check|exp)
+
+	check-type(msg|exp, type) = collect-error(<perform-check(type-of, fail, msg)> (exp, type))
+	check-type(msg, check|exp) = collect-error(<perform-check(type-of, check, fail, msg)> exp)
+	
+	check-types(|exps, types) = check-types(type-error2|exps, types)
+	check-types(check|exps) = check-types(type-error1, check|exps)
+
+	check-types(msg|exps, types) = collect-errors(<checks(type-of, fail, msg)> (exps, types))
+	check-types(msg, check|exps) = collect-errors(<checks(type-of, check, fail, msg)> exps)
+	
+	type-error1: _ -> "Type check failed."
+	type-error2: (actual, expected) -> $[Expression is of type [<type-to-string> actual] instead of type [<type-to-string> expected]]
+	
+rules
+	
+	check-resolve(|ref, def) = check-resolve(resolve-error2|ref, def)
+	check-resolve(check|ref) = check-resolve(resolve-error1, check|ref)
+	
+	check-resolve(msg|ref, def) = collect-error(<perform-check(resolve, undeclared-error, msg)> (ref, def))
+	check-resolve(msg, check|ref) = collect-error(<perform-check(resolve, check, undeclared-error, msg)> ref)
+	
+	check-resolves(|refs, defs) = check-resolves(resolve-error2|refs, defs)
+	check-resolves(check|refs) = check-resolves(resolve-error1, check|refs)
+	
+	check-resolves(msg|refs, defs) = collect-errors(<checks(resolve, undeclared-error, msg)> (refs, defs))
+	check-resolves(msg, check|refs) = collect-errors(<checks(resolve, check, undeclared-error, msg)> refs)
+	
+	undeclared-error: exp -> $[[<term-to-string> exp] is not declared.]
+	resolve-error1: _ -> "Resolve check failed."
+	resolve-error2: (actual, expected) -> $[Reference refers to [<term-to-string> actual] instead of [<term-to-string> expected]]
+
+rules	
+	
+	check-resolve-type(|ref, type) = check-resolve-type(type-error2|ref, type)
+	check-resolve-type(check|ref) = check-resolve-type(type-error1, check|ref)
+	
+	check-resolve-type(msg|ref, type) = check-resolve(id|ref) ; try(check-type(msg|<resolve> ref, type))
+	check-resolve-type(msg, check|ref) = check-resolve(id|ref) ; try(check-type(msg, check|<resolve> ref))
+	
+	check-resolve-types(|refs, types) = check-resolve-types(type-error2|refs, types)
+	check-resolve-types(check|refs) = check-resolve-types(type-error1, check|refs)
+	
+	check-resolve-types(msg|refs, types) = 
+		
+		check-resolves(id|refs) ; 
+		where ( <zip ; filter((resolve, id)) ; unzip> (refs, types) => (defs, types') ) ;
+		check-types(msg|defs, types')
+		
+	check-resolve-types(msg, check|refs) = check-resolves(id|refs) ; check-types(msg, check|<filter(resolve)> refs)
+	
+rules
+	
+	check-type-rel(|relname, sub, super) = check-type-rel(type-rel-error|relname, sub, super)
+	check-trans-type-rel(|relname, sub, super) = check-type-rel(type-rel-error|relname, sub, super)
+	
+	check-type-rel(msg|relname, sub, super) = collect-error(<check-type-rel(msg|relname)> (sub, super))
+	check-trans-type-rel(msg|relname, sub, super) = collect-error(<check-trans-type-rel(msg|relname)> (sub, super))
+	
+	check-type-rels(|relname, subs, supers) = check-type-rels(type-rel-error|relname, subs, supers)
+	check-trans-type-rels(|relname, subs, supers) = check-type-rels(type-rel-error|relname, subs, supers)
+	
+	check-type-rels(msg|relname, subs, supers) = collect-errors(<zip ; filter(check-type-rel(msg|relname))> (subs, supers))
+	check-trans-type-rel(msg|relname, subs, supers) = collect-errors(<zip ; filter(check-trans-type-rel(msg|relname))> (subs, supers))
+	
+	check-type-rel(msg|relname): (sub, super) -> (sub, <msg> (sub, super))
+	where not (type-rel(|relname))
+	
+	check-trans-type-rel(msg|relname): (sub, super) -> (sub, <msg> (sub, super))
+	where not (trans-type-rel(|relname))
+	
+	type-rel-error: (sub, super) -> $[Expression is of type [<type-to-string> sub] instead of type [<type-to-string> super]]
+	

@@ -1,0 +1,20 @@
+[
+   Prog              -- KW["program"] _1,
+   Var               -- _1,
+   Decl              -- _1 KW[":"] _2 KW[";"],
+   Assign            -- _1 KW["="] _2 KW[";"],
+   While             -- KW["while"] _1 _2,
+   If                -- KW["if"] _1 _2,
+   IfElse            -- KW["if"] _1 _2 KW["else"] _3,
+   Block             -- V  [V vs=2 [KW["{"] _1] KW["}"]],
+   Block.1:iter-star -- _1,
+   Int               -- KW["int"],
+   String            -- KW["string"],
+   IntConst          -- _1,
+   StringConst       -- _1,
+   Plus              -- _1 KW["+"] _2,
+   Minus             -- _1 KW["-"] _2,
+   Times             -- _1 KW["*"] _2,
+   Div               -- _1 KW["div"] _2,
+   Mod               -- _1 KW["mod"] _2
+]

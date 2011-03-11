@@ -1,0 +1,24 @@
+module normal/normal
+
+imports
+	
+	include/PL
+	normal/signature
+	types/gen-analysis
+	
+rules
+		
+	normal: If(e, s) -> IfElse(e, s, Block([]))
+	
+	normal: Plus(l, r)  -> BinExp(PLUS(), l, r)
+	where
+		<type-of> l => INT(); <type-of> r => INT()
+		
+	normal: Plus(l, r)  -> BinExp(CONCAT(), l, r)
+	where
+		<type-of> l => STRING() <+ <type-of> r => STRING()
+	
+	normal: Minus(l, r) -> BinExp(MINUS(), l, r)	
+	normal: Times(l, r) -> BinExp(TIMES(), l, r)	
+	normal: Div(l, r)   -> BinExp(DIV(), l, r)	
+	normal: Mod(l, r)   -> BinExp(MOD(), l, r)	

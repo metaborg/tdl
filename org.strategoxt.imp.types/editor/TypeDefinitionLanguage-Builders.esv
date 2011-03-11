@@ -1,0 +1,23 @@
+
+module TypeDefinitionLanguage-Builders
+
+imports TypeDefinitionLanguage-Builders.generated
+
+builders
+                                                                      
+  // This file can be used for custom analysis and builder rules.     
+  //                                                                  
+  // See the imported file for a brief introduction and examples.     
+
+builders
+                                                                                                               
+  provider : include/typedefinitionlanguage.ctree                                                              
+  provider : include/typedefinitionlanguage-java.jar                                                           
+                                                                                                               
+  observer : editor-analyse                                                                                    
+                                                                                                               
+  builder  : "Show abstract syntax (for selection)"   = generate-aterm (openeditor) (realtime) (meta) (source)  
+  builder  : "Show analysed syntax (for selection)"   = generate-aterm (openeditor) (realtime) (meta)  
+  
+  on save  : generate-analysis                    
+  on save  : generate-check                                                                             

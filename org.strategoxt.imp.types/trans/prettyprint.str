@@ -1,0 +1,10 @@
+module prettyprint
+
+imports
+  include/TypeDefinitionLanguage
+
+strategies //custom strategy for code formatting
+  	
+prettyprint=
+  where(is-string <+ is-num)
+

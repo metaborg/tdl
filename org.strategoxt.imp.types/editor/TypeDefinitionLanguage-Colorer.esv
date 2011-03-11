@@ -1,0 +1,41 @@
+module TypeDefinitionLanguage-Colorer
+
+imports TypeDefinitionLanguage-Colorer.generated
+
+colorer
+                                                                      
+  layout     : 63 127 95    italic
+  
+  // White background for variables and escapes
+  environment _.StringEscape1 : _ 255 255 255
+  environment _.StringEscape2 : _ 255 255 255
+  environment _.StringEscape3 : _ 255 255 255
+  environment _.StringEscape4 : _ 255 255 255
+  _.Wld     : _ 255 255 255
+
+  _.StringEscape1 : gray  
+  _.StringEscape2 : gray  
+  _.StringEscape3 : gray  
+  _.StringEscape4 : gray
+  
+  _.Str		: blue
+  _.QStr    : blue
+  _.QDollar : blue
+  _.QBr     : gray
+    
+  terms         = 0    0    0
+  vars          = 0    0    0   255 255 255
+  sdefault      = 0    0    0
+  
+  Term      : terms
+  PreTerm   : terms
+  Var       : vars
+  _.Var     : vars
+  _.ListVar : vars
+  
+  QuotedBracket1 : blue
+  QuotedBracket2 : blue
+  QuotedBracket3 : blue
+  QuotedBracket4 : blue
+
+  SEP : 0 0 128

@@ -1,0 +1,19 @@
+module check
+
+imports
+	libstratego-lib
+	include/TypeDefinitionLanguage
+	lib/editor-common.generated
+
+rules
+
+	analyse: t -> t'
+	where
+		tcs := <collect-all(?TypeDecl(<id>, NoTypeParams(), _))> t ;
+		t'  := <alltd(replace-var(|tcs))> t
+
+	replace-var(|cs): Var(c) -> Op(c, [])
+	where
+		<elem> (c, cs) 
+  
+  

@@ -1,0 +1,118 @@
+module gen-analysis
+
+imports
+
+	include/TypeDefinitionLanguage
+	lib/Stratego-Sugar
+
+rules // module
+
+	gen-analysis: 
+		TypeDef(mname, td-parts) -> Module(mname', [import|str-parts])
+		where
+			mname' := <strcat> (mname, "/gen-analysis") ;
+			import := Imports([Import("lib/typecheck")]) ;
+			str-parts := <filter(gen-analysis)> td-parts
+
+rules // imports
+    
+    gen-analysis: 
+    	SigPart(import*) -> Imports(import*)
+    
+rules // type declarations
+	
+    gen-analysis: 
+    	TypePart(decls) -> Signature([Constructors(<map(gen-analysis)> decls)])
+    
+    gen-analysis: 
+    	TypeDecl(name, params, _) -> OpDecl(name, <gen-analysis> params)
+    	
+    gen-analysis: 
+    	NoTypeParams() -> ConstType(SortNoArgs("TYPE"))
+    
+    gen-analysis: 
+    	TypeParams(params) -> FunType([<map(gen-analysis)> params], ConstType(SortNoArgs("TYPE")))
+    
+    gen-analysis: 
+    	TypeParam(_, sort) -> ConstType(sort)
+    
+rules // typing rules
+	
+	gen-analysis: 
+		RulePart(td-rules) -> Rules(str-rules) 
+		where 
+			str-rules := <filter(gen-analysis)> td-rules ;
+			<Hd> str-rules
+	
+	gen-analysis: 
+		TypeRule(conditions, _, term, type) -> RDefNoArgs("type-of", rule)
+		where
+			clauses := <map(gen-analysis-clause)> conditions ;
+			rule := <gen-str-rule(|term, <gen-analysis> type)> clauses
+	
+	gen-analysis: 
+		RelationRule(conditions, _, type1, op, type2) -> SDefNoArgs("init-relations", Seq(GenDynRules([AddDynRule(DynRuleId(RDecNoArgs("type-rel")), rule)]), Fail())) 
+		where
+			clauses := <filter(gen-analysis-clause)> conditions ;
+			rule := <gen-str-rule-help(|Tuple([Str(<gen-analysis> op), As(Var("self"), <gen-analysis> type1)]), <gen-analysis> type2)> clauses
+	
+	gen-analysis: DefaultRelation() -> "default-rel"
+	gen-analysis: NamedRelation(name) -> name
+	
+	gen-str-rule(|lhs, rhs) = gen-str-rule-help(|As(Var("self"), lhs), rhs)
+	
+	gen-str-rule-help(|lhs, rhs): 
+		[] -> RuleNoCond(lhs, rhs)
+	 
+	gen-str-rule-help(|lhs, rhs): 
+		clauses@[_|_] -> Rule(lhs, rhs,  clauses)
+	
+rules // premises
+	
+	gen-analysis-clause: 
+		Error(cond, _) -> <gen-analysis-clause> cond
+	
+	gen-analysis-clause: Strategy(s) -> WhereClause(s)
+	
+	gen-analysis-clause: premise -> WhereClause(AM(App(str, l), r))
+		where
+			<gen-analysis> premise => (str, lhs, rhs) ;
+			<try(gen-analysis)> lhs => l ;
+			<try(gen-analysis)> rhs => r 
+	
+	gen-analysis-clause: premise -> WhereClause(App(str, tuple))
+		where
+			<gen-analysis> premise => (str, tuple)
+			
+	gen-analysis: 
+		Map(c) -> (Call(SVar("map"), [str]), lhs, rhs)
+		where
+			<gen-analysis> c => (str, lhs, rhs)
+	
+	gen-analysis: 
+		Map(c) -> (Call(SVar("zip"), [str]), lhs)
+		where
+			<gen-analysis> c => (str, lhs)
+			
+	gen-analysis: 
+		TypeCheck(term, type) -> (SVar("type-of"), term, type)
+	
+	gen-analysis: 
+		Resolve(term1, term2) ->  (SVar("resolve"), term1, term2) 
+	
+	gen-analysis: 
+		ResolveCheck(term, type) ->  (Seq(SVar("resolve"), SVar("type-of")), term, type) 
+	
+	gen-analysis:
+		Relation(type1, rel, type2) -> (CallT(SVar("type-rel"), [], [Str(<gen-analysis> rel)]), Tuple([<try(gen-analysis)> type1, <try(gen-analysis)> type2]))
+
+	gen-analysis:
+		Relation(type1, TransitiveClosure(rel), type2) -> (CallT(SVar("trans-type-rel"), [], [Str(<gen-analysis> rel)]), Tuple([<try(gen-analysis)> type1, <try(gen-analysis)> type2]))
+
+rules // self & types
+	
+	gen-analysis: Self() -> Var("self")
+		
+	gen-analysis: Type([], type) -> type
+	gen-analysis: Type([param@Var(_)], type) -> Op("FUN_TYPE", [param, type])
+	gen-analysis: Type(params@[_,_|_], type) -> Op("FUN_TYPE", [List(params), type])

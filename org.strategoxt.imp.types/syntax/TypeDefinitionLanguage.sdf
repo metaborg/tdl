@@ -1,0 +1,82 @@
+module TypeDefinitionLanguage
+
+imports TDL-Terms TDL-Signatures TDL-Layout
+
+exports
+	
+	lexical syntax
+		
+		"===" "="* -> SEP
+		"___" "_"* -> SEP
+		"---" "-"* -> SEP
+		
+		%%SEP -> LAYOUT
+		
+	lexical restrictions
+		
+		SEP -/- [\=\_\-]
+		
+	context-free start-symbols
+		Start
+
+	context-free syntax
+		
+		"module" ModName Part* -> Start {cons("TypeDef")}
+
+	sorts Decl 
+	
+	context-free syntax
+		
+		"signatures" ImportModName*	-> Part {cons("SigPart")}
+  		"types" TypeDecl* 			-> Part {cons("TypePart")}
+		"rules" Rule* 				-> Part {cons("RulePart")}
+
+	sorts ImportModName
+
+	context-free syntax
+
+		ModName	-> ImportModName {cons("Import")}
+ 
+ 		"<:"	-> SimpleRelSymbol {cons("DefaultRelation")}
+ 		
+ 		SimpleRelSymbol -> RelSymbol
+ 		
+ 	syntax
+		
+		<ModName-CF> "/" "-" 	-> <ImportModName-CF> {cons("ImportWildcard")}
+			
+		"<" <Id-CF> ":" 			-> <SimpleRelSymbol-CF> {cons("NamedRelation")}
+		<SimpleRelSymbol-CF> "*" 	-> <RelSymbol-CF> {cons("TransitiveClosure")}
+			
+	context-free syntax
+			
+		Term ":" Type	 										-> Rule {ast("TypeRule([], \"---\", <1>, <2>)")}
+		{AnnotatedPremise "&"}+ SEP Term ":" Type 				-> Rule {cons("TypeRule")}
+		Type SimpleRelSymbol Type	 							-> Rule {ast("RelationRule([], \"---\", <1>, <2>, <3>)")}
+		{AnnotatedPremise "&"}+ SEP Type SimpleRelSymbol Type	-> Rule {cons("RelationRule")}
+		{AnnotatedPremise "&"}+ SEP Term 						-> Rule {cons("CheckRule")}
+
+		Term ":" Type 		-> SimplePremise {cons("TypeCheck")}
+		"@" Term "=" Term	-> SimplePremise {cons("Resolve")}
+		"@" Term ":" Type 	-> SimplePremise {cons("ResolveCheck")}
+		Type RelSymbol Type -> SimplePremise {cons("Relation")}
+		
+		SimplePremise		-> Premise
+		"map" SimplePremise	-> Premise {cons("Map")}
+		Strategy			-> Premise {cons("Strategy")}
+		
+		Id 					-> SVar {cons("SVar")}
+		"<" SVar ">" Term	-> Appl {cons("Appl")}
+		
+		Appl				-> Strategy
+		Appl "=>" Term		-> Strategy {cons("AM")} 
+
+		Premise			-> AnnotatedPremise
+		Premise PPTerm	-> AnnotatedPremise {cons("Error")}
+						
+		Term 					-> Type {ast("Type([], <1>)")}
+		{Term "*"}+ "->" Term 	-> Type {cons("Type")}
+
+	context-free syntax %% syntactic sugar
+		
+		

@@ -1,0 +1,107 @@
+module gen-check
+
+imports
+
+	include/TypeDefinitionLanguage
+	lib/Stratego-Sugar
+
+	gen-analysis
+	
+rules // module
+
+	gen-check: 
+		TypeDef(mname, td-parts) -> Module(<strcat> (mname, "/gen-check"), [import|str-parts])
+		where
+			import := Imports([Import("lib/typecheck"), Import(<strcat> (mname, "/gen-analysis"))]) ;
+			str-parts := <filter(gen-check)> td-parts
+
+rules // imports
+    
+    gen-check: 
+    	SigPart(import*) -> Imports(import*)
+    
+rules // type declarations
+	
+    gen-check: 
+    	TypePart(decls) -> Rules(<filter(gen-check)> decls)
+    
+    gen-check: 
+    	TypeDecl(name, params, string) -> RDefNoArgs("type-to-string", RuleNoCond(Op(name, <gen-check> params), string))
+    	
+    gen-check: 
+    	NoTypeParams() -> []
+    
+    gen-check: 
+    	TypeParams(params) -> <map(gen-check)> params
+    
+    gen-check: 
+    	TypeParam(name, _) -> Var(name)
+    
+rules // typing rules
+	
+	gen-check: 
+		RulePart(td-rules) -> Rules(str-rules) 
+		where 
+			str-rules := <filter(gen-check)> td-rules ;
+			<Hd> str-rules
+	
+	gen-check: 
+		TypeRule(conditions, sep, term, type) -> <gen-check> CheckRule(conditions, sep, term)
+		
+	gen-check: 
+		CheckRule(conditions, _, term) -> RDefNoArgs("type-check", rule)
+		where
+			checks := <filter(gen-check-error <+ gen-check-default)> conditions ;
+			<Hd> checks ;
+			str := <foldr(!Id(), gen-str-seq)> checks ;
+			rule := <gen-str-rule(|term, App(str, List([])))> []
+			
+	gen-str-seq: (s1, Id()) -> s1
+	gen-str-seq: (s1, s2) -> Seq(s1, s2) where not(<eq> (s2, Id()))
+	
+rules // premises
+	
+	gen-check-error: 
+		Error(p, msg) -> CallT(SVar(name), [Build(msg)|<map(!Match(<try(gen-analysis)>))> matches], <map(try(gen-analysis))> terms)
+		where
+			<gen-check> p => (name, matches, terms)
+			
+	gen-check-default: 
+		p -> CallT(SVar(name), <map(!Match(<try(gen-analysis)>))> matches, <map(try(gen-analysis))> terms)
+		where
+			<gen-check> p => (name, matches, terms)
+			
+	gen-check: Map(p) -> <gen-check ; (app(|"s"), id, id)> p
+		
+	app(|s2): s1 -> <strcat> (s1, s2)
+	
+	gen-check:	 
+		TypeCheck(term, type) -> ("check-type", checks, terms)
+		where
+			(checks, terms) := <needs-check> (term, type)
+	
+	gen-check: 
+		Resolve(term1, term2) -> ("check-resolve", checks, terms)
+		where
+			(checks, terms) := <needs-check> (term1, term2)
+			
+	gen-check: 
+		ResolveCheck(term, type) -> ("check-resolve-type", checks, terms)
+		where
+			(checks, terms) := <needs-check> (term, type)
+			
+	gen-check: 
+		Relation(type1, rel, type2) -> ("check-type-rel", [], [Str(<gen-analysis> rel), type1, type2])
+	
+	gen-check: 
+		Relation(type1, TransitiveClosure(rel), type2) -> ("check-trans-type-rel", [], [Str(<gen-analysis> rel), type1, type2])
+	
+	needs-check: (term1, term2) -> (checks, terms)
+	where
+		if fail then 
+			checks := []; 
+			terms  := [term1, term2] 
+		else 
+			checks := [term2]; 
+			terms  := [term1] 
+		end

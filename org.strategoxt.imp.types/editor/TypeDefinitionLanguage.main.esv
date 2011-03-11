@@ -1,0 +1,16 @@
+module TypeDefinitionLanguage.main
+
+imports TypeDefinitionLanguage-Builders TypeDefinitionLanguage-Colorer TypeDefinitionLanguage-Completions TypeDefinitionLanguage-Folding TypeDefinitionLanguage-Outliner TypeDefinitionLanguage-References TypeDefinitionLanguage-Syntax
+
+language General properties
+                  
+  name          : TypeDefinitionLanguage
+  id            : org.strategoxt.imp.types
+  extends       : Root
+                  
+  description   : "Spoofax/IMP-generated editor for the TypeDefinitionLanguage language"
+  url           : http://strategoxt.org
+                  
+  extensions    : td
+  table         : include/TypeDefinitionLanguage.tbl
+  start symbols : Start

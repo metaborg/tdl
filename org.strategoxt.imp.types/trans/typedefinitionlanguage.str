@@ -1,0 +1,52 @@
+module typedefinitionlanguage
+
+imports
+  libstratego-lib
+  libstratego-gpp
+  libstratego-aterm
+  libstrc
+  include/TypeDefinitionLanguage
+  lib/editor-common.generated
+  check
+  gen-analysis
+  gen-check
+  prettyprint
+  refactorings
+
+rules // Main editor interface (defined by editor/TypeDefinitionLanguage-Builders and -References.esv)
+  
+  editor-analyse:
+    (ast, path, project-path) -> (ast', errors, warnings, notes)
+    with
+      editor-init;
+      ast' := <analyse> ast;
+      errors   := [];//<collect-all(fail, conc)> ast';
+      warnings := [];//<collect-all(fail, conc)> ast';
+      notes    := []//<collect-all(fail, conc)> ast'
+  
+  generate-analysis = generate-str(gen-analysis|"/gen-analysis")
+  
+  generate-check = generate-str(gen-check|"/gen-check")
+  
+  generate-str(gen|ext): (selected, position, ast, path, project-path) -> (filename, result)
+    with
+      filename := <guarantee-extension(|"str")> <strcat> (<remove-extension> path, ext);
+      result   := <pp-stratego-string> <gen> ast
+ 
+  // Prints the abstract syntax ATerm of a selection.
+  generate-aterm:
+    (selected, position, ast, path, project-path) -> (filename, result)
+    with
+      filename := <guarantee-extension(|"aterm")> path;
+      result   := selected // we just return the input term
+  
+  editor-resolve:
+    (node, position, ast, path, project-path) -> []
+    where fail
+
+  editor-hover:
+    (target, position, ast, path, project-path) -> $[Hover help: [<write-to-string> target]]
+
+  editor-complete:
+    (node, position, ast, path, project-path) -> []
+    where fail

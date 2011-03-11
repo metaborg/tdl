@@ -1,0 +1,52 @@
+module TDL-Terms
+
+imports
+	TDL-Constants
+	TDL-Identifiers
+	
+exports
+  sorts ID Var Wld
+  context-free syntax
+    Id 				-> Var  {cons("Var")}
+    Id				-> ID
+
+  sorts Term
+  context-free syntax
+    Var 			 -> PreTerm 
+    Var 			 -> Term {prefer}
+	"self"			 -> PreTerm {cons("Self")}
+	"self"			 -> Term {prefer, cons("Self")}
+	
+    "_" 			 -> Wld {cons("Wld")}
+    Wld 			 -> PreTerm 
+    Wld 			 -> Term {prefer}
+
+    Int 			 -> PreTerm {cons("Int")}
+    Real 			 -> PreTerm {cons("Real")}
+    String 			 -> PreTerm {cons("Str")}
+
+    Id "(" {Term ","}* ")" 	 	-> PreTerm {cons("Op")}
+    String "(" {Term ","}* ")"	-> PreTerm {cons("OpQ")}
+
+	PreTerm                     -> Term {cons("NoAnnoList")}
+
+  sorts LID
+  context-free syntax
+    LId 			-> LID  {cons("ListVar")}
+    LID				-> Var  {cons("Var")}
+    LID				-> ID
+
+  context-free syntax
+    Char 			 -> PreTerm {cons("Char")}
+
+    %%"(" {Term ","}* ")" 	 -> PreTerm {cons("Tuple")}
+    "[" {Term ","}* "]" 	 -> PreTerm {cons("List")}
+    "[" {Term ","}* "|" Term "]" -> PreTerm {cons("ListTail")}
+
+  lexical syntax
+  	
+  	"self" -> Keyword
+	
+  context-free restrictions
+    Wld -/- [a-zA-Z0-9\'\-\_]
+

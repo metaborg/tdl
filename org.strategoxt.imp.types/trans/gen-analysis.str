@@ -54,10 +54,10 @@ rules // typing rules
 		RelationRule(conditions, _, type1, op, type2) -> SDefNoArgs("init-relations", Seq(GenDynRules([AddDynRule(DynRuleId(RDecNoArgs("type-rel")), rule)]), Fail())) 
 		where
 			clauses := <filter(gen-analysis-clause)> conditions ;
-			rule := <gen-str-rule-help(|Tuple([Str(<gen-analysis> op), As(Var("self"), <gen-analysis> type1)]), <gen-analysis> type2)> clauses
+			rule := <gen-str-rule-help(|Tuple([<gen-analysis> op, As(Var("self"), <gen-analysis> type1)]), <gen-analysis> type2)> clauses
 	
-	gen-analysis: DefaultRelation() -> "default-rel"
-	gen-analysis: NamedRelation(name) -> name
+	gen-analysis: DefaultRelation() -> Str("default-rel")
+	gen-analysis: NamedRelation(name) -> Str(name)
 	
 	gen-str-rule(|lhs, rhs) = gen-str-rule-help(|As(Var("self"), lhs), rhs)
 	
@@ -104,10 +104,10 @@ rules // premises
 		ResolveCheck(term, type) ->  (Seq(SVar("resolve"), SVar("type-of")), term, type) 
 	
 	gen-analysis:
-		Relation(type1, rel, type2) -> (CallT(SVar("type-rel"), [], [Str(<gen-analysis> rel)]), Tuple([<try(gen-analysis)> type1, <try(gen-analysis)> type2]))
+		Relation(type1, rel, type2) -> (CallT(SVar("type-rel"), [], [<gen-analysis> rel]), Tuple([<try(gen-analysis)> type1, <try(gen-analysis)> type2]))
 
 	gen-analysis:
-		Relation(type1, TransitiveClosure(rel), type2) -> (CallT(SVar("trans-type-rel"), [], [Str(<gen-analysis> rel)]), Tuple([<try(gen-analysis)> type1, <try(gen-analysis)> type2]))
+		Relation(type1, TransitiveClosure(rel), type2) -> (CallT(SVar("trans-type-rel"), [], [<gen-analysis> rel]), Tuple([<try(gen-analysis)> type1, <try(gen-analysis)> type2]))
 
 rules // self & types
 	

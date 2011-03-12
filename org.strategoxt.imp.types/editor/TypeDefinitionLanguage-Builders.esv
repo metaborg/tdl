@@ -19,5 +19,4 @@ builders
   builder  : "Show abstract syntax (for selection)"   = generate-aterm (openeditor) (realtime) (meta) (source)  
   builder  : "Show analysed syntax (for selection)"   = generate-aterm (openeditor) (realtime) (meta)  
   
-  on save  : generate-analysis                    
-  on save  : generate-check                                                                             
+  on save  : generate-all                                                                             

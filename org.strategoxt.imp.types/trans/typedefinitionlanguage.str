@@ -24,6 +24,8 @@ rules // Main editor interface (defined by editor/TypeDefinitionLanguage-Builder
       warnings := [];//<collect-all(fail, conc)> ast';
       notes    := []//<collect-all(fail, conc)> ast'
   
+  generate-all = where (generate-analysis ; save-file); where(generate-check ; save-file)
+  
   generate-analysis = generate-str(gen-analysis|"/gen-analysis")
   
   generate-check = generate-str(gen-check|"/gen-check")
@@ -33,6 +35,13 @@ rules // Main editor interface (defined by editor/TypeDefinitionLanguage-Builder
       filename := <guarantee-extension(|"str")> <strcat> (<remove-extension> path, ext);
       result   := <pp-stratego-string> <gen> ast
  
+  save-file: (filename, content) -> <id>
+  where
+  	fd := <fopen> (filename, "w") ;
+	<fputs> (content, fd) ;
+	<fclose> fd ;
+	<refresh-workspace-file> filename
+	
   // Prints the abstract syntax ATerm of a selection.
   generate-aterm:
     (selected, position, ast, path, project-path) -> (filename, result)

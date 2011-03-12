@@ -52,7 +52,7 @@
    Map                      -- KW["map"] _1,
    Strategy                 -- _1,
    SVar                     -- _1,
-   Appl                     -- KW["<"] _1 KW[">"] _2,
+   App                      -- KW["<"] _1 KW[">"] _2,
    AM                       -- _1 KW["=>"] _2,
    Error                    -- _1 _2,
    Type                     -- _1 KW["->"] _2,

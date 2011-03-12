@@ -51,7 +51,7 @@ rules // typing rules
 	gen-check: 
 		CheckRule(conditions, _, term) -> RDefNoArgs("type-check", rule)
 		where
-			checks := <filter(gen-check-error <+ gen-check-default)> conditions ;
+			checks := <filter(gen-check)> conditions ;
 			<Hd> checks ;
 			str := <foldr(!Id(), gen-str-seq)> checks ;
 			rule := <gen-str-rule(|term, App(str, List([])))> []
@@ -61,47 +61,52 @@ rules // typing rules
 	
 rules // premises
 	
-	gen-check-error: 
-		Error(p, msg) -> CallT(SVar(name), [Build(msg)|<map(!Match(<try(gen-analysis)>))> matches], <map(try(gen-analysis))> terms)
+	gen-check: 
+		Error(p, msg) -> CallT(SVar(name), [Build(msg)|checks], terms)
 		where
-			<gen-check> p => (name, matches, terms)
-			
-	gen-check-default: 
-		p -> CallT(SVar(name), <map(!Match(<try(gen-analysis)>))> matches, <map(try(gen-analysis))> terms)
+			<gen-check> p => CallT(SVar(name), checks, terms)
+					
+	gen-check: 
+		Map(p) -> CallT(SVar(name'), checks, terms)
 		where
-			<gen-check> p => (name, matches, terms)
-			
-	gen-check: Map(p) -> <gen-check ; (app(|"s"), id, id)> p
-		
-	app(|s2): s1 -> <strcat> (s1, s2)
+			<gen-check> p => CallT(SVar(name), checks, terms) ;
+			name' := <strcat> (name, "s")
 	
 	gen-check:	 
-		TypeCheck(term, type) -> ("check-type", checks, terms)
+		TypeCheck(term, type) -> CallT(SVar("check-type"), checks, terms)
 		where
 			(checks, terms) := <needs-check> (term, type)
 	
 	gen-check: 
-		Resolve(term1, term2) -> ("check-resolve", checks, terms)
+		Resolve(term1, term2) -> CallT(SVar("check-resolve"), checks, terms)
 		where
 			(checks, terms) := <needs-check> (term1, term2)
 			
 	gen-check: 
-		ResolveCheck(term, type) -> ("check-resolve-type", checks, terms)
+		ResolveCheck(term, type) -> CallT(SVar("check-resolve-type"), checks, terms)
 		where
 			(checks, terms) := <needs-check> (term, type)
 			
 	gen-check: 
-		Relation(type1, rel, type2) -> ("check-type-rel", [], [Str(<gen-analysis> rel), type1, type2])
+		Relation(type1, rel, type2) -> CallT(SVar("check-type-rel"), [], [<gen-analysis> rel, <try(gen-analysis)> type1, <try(gen-analysis)> type2])
 	
 	gen-check: 
-		Relation(type1, TransitiveClosure(rel), type2) -> ("check-trans-type-rel", [], [Str(<gen-analysis> rel), type1, type2])
+		Relation(type1, TransitiveClosure(rel), type2) -> CallT(SVar("check-trans-type-rel"), [], [<gen-analysis> rel, <try(gen-analysis)> type1, <try(gen-analysis)> type2])
+	
+	gen-check:	 
+		Strategy(App(s, term)) -> CallT(SVar("check-strategy"), [s], [<try(gen-analysis)> term])
+	
+	gen-check:	 
+		Strategy(AM(App(s, term1), term2)) -> CallT(SVar("check-strategy"), [s|checks], terms)
+		where
+			(checks, terms) := <needs-check> (term1, term2)
 	
 	needs-check: (term1, term2) -> (checks, terms)
 	where
 		if fail then 
 			checks := []; 
-			terms  := [term1, term2] 
+			terms  := [<try(gen-analysis)> term1, <try(gen-analysis)> term2] 
 		else 
-			checks := [term2]; 
-			terms  := [term1] 
+			checks := [<!Match(<try(gen-analysis)>)> term2]; 
+			terms  := [<try(gen-analysis)> term1] 
 		end

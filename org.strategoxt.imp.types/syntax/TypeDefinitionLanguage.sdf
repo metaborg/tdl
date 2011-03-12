@@ -66,7 +66,7 @@ exports
 		Strategy			-> Premise {cons("Strategy")}
 		
 		Id 					-> SVar {cons("SVar")}
-		"<" SVar ">" Term	-> Appl {cons("Appl")}
+		"<" SVar ">" Term	-> Appl {cons("App")}
 		
 		Appl				-> Strategy
 		Appl "=>" Term		-> Strategy {cons("AM")} 

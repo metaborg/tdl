@@ -33,7 +33,7 @@ rules // expressions
 	
 	  op: t1 * t2 -> t	"Unknown operator" 
 	& e1: t1
-	& e2: t2
+	& e2: t2 
 	===================== 
 	BinExp(op, e1, e2): t
 		

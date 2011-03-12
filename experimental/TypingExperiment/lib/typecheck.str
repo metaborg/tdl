@@ -67,7 +67,7 @@ rules
 	check-types(msg|exps, types) = collect-errors(<checks(type-of, fail, msg)> (exps, types))
 	check-types(msg, check|exps) = collect-errors(<checks(type-of, check, fail, msg)> exps)
 	
-	type-error1: _ -> "Type check failed."
+	type-error1: _ -> "Expression is of wrong type."
 	type-error2: (actual, expected) -> $[Expression is of type [<type-to-string> actual] instead of type [<type-to-string> expected]]
 	
 rules
@@ -85,7 +85,7 @@ rules
 	check-resolves(msg, check|refs) = collect-errors(<checks(resolve, check, undeclared-error, msg)> refs)
 	
 	undeclared-error: exp -> $[[<term-to-string> exp] is not declared.]
-	resolve-error1: _ -> "Resolve check failed."
+	resolve-error1: _ -> "Reference to wrong declaration."
 	resolve-error2: (actual, expected) -> $[Reference refers to [<term-to-string> actual] instead of [<term-to-string> expected]]
 
 rules	
@@ -127,5 +127,17 @@ rules
 	check-trans-type-rel(msg|relname): (sub, super) -> (sub, <msg> (sub, super))
 	where not (trans-type-rel(|relname))
 	
-	type-rel-error: (sub, super) -> $[Expression is of type [<type-to-string> sub] instead of type [<type-to-string> super]]
+	type-rel-error: (sub, super) -> $[Expression is of type [<type-to-string> sub] instead of type [<type-to-string> super].]
+	
+rules
+	
+	check-strategy(s|t1, t2) = check-strategy(strategy-error2, s|t1, t2)
+	check-strategy(s, check|t) = check-strategy(strategy-error1, s, check|t)
+
+	check-strategy(msg, s|ref, def) = collect-error(<perform-check(s, fail-error, msg)> (ref, def))
+	check-strategy(msg, s, check|ref) = collect-error(<perform-check(s, check, fail-error, msg)> ref)
+
+	fail-error: exp -> $[Strategy failed on [<term-to-string> exp].]
+	strategy-error1: _ -> "Strategy yields wrong result."
+	strategy-error2: (actual, expected) -> $[Strategy yields [<term-to-string> actual] instead of [<term-to-string> expected].]
 	
